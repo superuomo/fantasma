@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-# TODO: headless, disable images, plugins, extensions in the browser,
+# TODO: disable images, plugins, extensions in the browser,
 # parallelize using watirgrid
 
 # Headless. See: https://github.com/leonid-shevtsov/headless

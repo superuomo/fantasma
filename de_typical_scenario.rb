@@ -3,6 +3,13 @@
 # TODO: headless, disable images, plugins, extensions in the browser,
 # parallelize using watirgrid
 
+# Headless. See: https://github.com/leonid-shevtsov/headless
+# requires xorg-server-xvfb
+#require 'rubygems'
+#require 'headless'
+#headless = Headless.new
+#headless.start
+
 #DEBUG:
 #require 'pp'
 #then use:
@@ -37,7 +44,7 @@ end
 
 # DEBUG: count requests
 #$c=0
-def pause
+def pause(reduced_wait=false)
   # DEBUG: count requests
   #$c=$c+1
   #puts $c
@@ -47,7 +54,8 @@ Wait from 8 to 20 sec. Since the average number of requests is 22,
 that is there are 21 pauses between requests, this equates to sessions
 lasting on average between 3 and 7 minutes.
 =end
-  sleep rand_range(8, 20)
+  #sleep reduced_wait ? rand_range(4, 10) : rand_range(8, 20)
+  sleep 5
 end
 
 =begin
@@ -86,9 +94,13 @@ b.goto 'http://www.lieferheld.de'
 place = next_place
 b.text_field(:id, 'strasse').set place[1]
 b.text_field(:id, 'zipcode_or_city').set place[0]
-# when_present decorator needed (if there is no pause afterwards)
-b.element(:css, '.green_big.submit').when_present.click
 
+pause
+
+# when_present decorator only needed if there is no pause before
+b.element(:css, '.green_big.submit').click
+
+# Select a random restaurant,
 first = true
 # DEBUG:
 #1.times do
@@ -115,12 +127,12 @@ rand_range(2, 3).times do
   b.goto link[rand(link.length)].href
 end
 
+pause
+
 i = 0
 cat = 0
 # Basket minimum 5 items or as much as you need to place an order.
 while i < 5 or b.div(:id, 'cart_btn_order').attribute_value('class').scan('button_inactive') == 'button_inactive'
-  pause
-  
   # Select random category.
   cats = b.div(:id, 'menu_category_list').uls
   subcats = cats[rand(cats.length)].lis
@@ -146,10 +158,15 @@ while i < 5 or b.div(:id, 'cart_btn_order').attribute_value('class').scan('butto
   # Basket random disk.
   # instead of lis, you can also try spans(:class, 'price_bg')
   # or divs(:class, 'item_text')
-  if catid == 'all' || catid == 'top10'
+  if catid == 'top10'
     items = b.div(:class, 'top10Center').lis
     # DEBUG:
-    #puts "top10Center or all: #{catid}"
+    #puts "top10"
+  elsif catid == 'all'
+    items = b.div(:id, 'menu_list').uls
+    items = items[rand(items.length)].lis
+    # DEBUG
+    #puts "all"
   else
     items = b.div(:id, "menu_section-#{catid}").lis
     # DEBUG:
@@ -176,7 +193,7 @@ while i < 5 or b.div(:id, 'cart_btn_order').attribute_value('class').scan('butto
         form.link(:class, 'jqTransformCheckbox').click
         # DEBUG:
         # puts "checkbox set"
-        pause
+        pause true
       elsif form.link(:class, 'jqTransformRadio').exists?
         # Radiobutton case.
         # DEBUG:
@@ -184,12 +201,14 @@ while i < 5 or b.div(:id, 'cart_btn_order').attribute_value('class').scan('butto
         form.link(:class, 'jqTransformRadio').click
         # DEBUG:
         # puts "radiobox set"
-        pause
+        pause true
       end
     end
   
     # Click on confirmation button.
     popup.link(:class, 'add buttonSecondary').when_present.click
+
+    pause
   end
 
   i = i + 1
@@ -197,4 +216,5 @@ end
 
 pause
 
+# Click on the checkout link
 b.link(:id, 'cartDummyButton').click
